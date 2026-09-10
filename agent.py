@@ -19,21 +19,39 @@ Returns:
     A description of what activity is expected at that time."""
     dt = datetime.fromisoformat(timestamp)
     time_str = dt.strftime("%H:%M")
+    TRASH_RUNS = [10, 13, 16, 19, 22]
 
-    if dt.hour == 0:
-        return f"{time_str} is within the delivery window (00:00-01:00). A delivery truck is expected."
-    elif 1 <= dt.hour < 6:
-        return f"{time_str} is within closed hours (01:00-06:00). Store is closed, no staff on site, nothing scheduled."
-    elif dt.hour == 6:
-        return f"{time_str} is within opening prep (06:00-07:00). Staff arriving to open, no customers expected."
-    elif 7 <= dt.hour <= 21:
-        return f"{time_str} is within open hours (07:00-22:00). Staff and customers expected."
-    elif dt.hour == 22:
-        return f"{time_str} is within closing (22:00-23:00). Staff closing up, no customers inside."
-    elif dt.hour == 23:
-        return f"{time_str} is within closed hours (23:00-00:00). Store is closed, nothing scheduled."
+    if device_id == "cam_front_door":
+        if 0 <= dt.hour < 6:
+            return f"{time_str} is within closed hours (00:00-06:00). Store closed, no staff on site, nothing scheduled."
+        elif dt.hour == 6:
+            return f"{time_str} is within opening prep (06:00-07:00). Staff arriving, no customers expected."
+        elif 7 <= dt.hour <= 21:
+            return f"{time_str} is within open hours (07:00-22:00). Staff and customers expected."
+        elif dt.hour == 22:
+            return f"{time_str} is within closing (22:00-23:00). Staff closing up, no customers expected."
+        else:
+            return f"{time_str} is within closed hours (23:00-00:00). Store closed, nothing scheduled."
+
+    elif device_id == "cam_back_door":
+        if dt.hour == 0:
+            return f"{time_str} is within the delivery window (00:00-01:00). A delivery truck is expected."
+        elif dt.hour == 22:
+            return f"{time_str} is within closing (22:00-23:00). A trash run is scheduled this hour. Staff only; customers do not use this door."
+        elif dt.hour in TRASH_RUNS:
+            return f"{time_str} is within open hours. A trash run is scheduled this hour, typically one or two staff passes."
+        elif dt.hour == 6:
+            return f"{time_str} is within opening prep (06:00-07:00). Staff arriving; back door use is possible but not scheduled."
+        elif 7 <= dt.hour <= 21:
+            return f"{time_str} is within open hours (07:00-22:00). No trash run scheduled this hour. Staff are inside and occasionally use this door; customers do not."
+        elif dt.hour == 23:
+            return f"{time_str} is within closed hours (23:00-00:00). Store closed, building empty, nothing scheduled."
+        else:
+            return f"{time_str} is within closed hours (01:00-06:00). Store closed, building empty, nothing scheduled."
+
     else:
-        return f"{time_str} has no schedule information available."
+        return f"{device_id} is not a recognized device. No schedule is configured for it."
+
 
 
 
@@ -53,4 +71,4 @@ agent = Agent(
     tools=[get_expected_activity]
 )
 
-result = agent("Motion detected at device cam_back_door at 2026-09-09T4:30:00")
+result = agent("Motion detected at device cam_back_door at 2026-09-09T3:30:00")
